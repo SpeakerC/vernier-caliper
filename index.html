@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f1eb">
+  <title>刻度之间 · 游标卡尺简笔画 PDF</title>
+  <meta name="description" content="选择分度值和题数，生成白底极简游标卡尺读数简笔画，每页 A4 纸 20 题，直接下载 PDF。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%231d1f1b'/%3E%3Cpath d='M12 32h40M12 32v12M20 32v6M28 32v9M36 32v6M44 32v12M12 24h4v8M48 24h4v8' fill='none' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="./index.html" aria-label="刻度之间，返回首页">
+        <svg class="brand-mark" viewBox="0 0 52 34" aria-hidden="true">
+          <path d="M7 18h38M7 18V8M7 18l-3 7M13 18v7M7 25h6M30 18v7M30 18h7v7h-7M38 18l3 7M20 18v3M24 18v4M28 18v3M43 18v3" />
+        </svg>
+        <span class="brand-copy">
+          <strong>刻度之间</strong>
+          <small>游标卡尺简笔画</small>
+        </span>
+      </a>
+
+      <div class="header-rule" aria-hidden="true"></div>
+      <p class="header-note">纯白 A4 · 每页 20 题 · 只保留必要的刻度</p>
+
+      <div class="header-actions">
+        <span class="format-chip">PDF / A4</span>
+        <button class="btn btn-dark" id="downloadPdfTop" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6.5 3.5h7.8l3.7 3.8v13.2h-11.5z" />
+            <path d="M14.2 3.7v4h4M9 12h6M9 15.3h6M9 18.6h4" />
+          </svg>
+          下载 PDF
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-layout">
+    <aside class="settings-panel" aria-label="生成设置">
+      <div class="panel-heading">
+        <span class="eyebrow">SIMPLE WORKSHEET</span>
+        <h1>读数简笔画</h1>
+        <p>选择分度值和题数。生成后即为白底 A4 PDF，每页放 20 道。</p>
+      </div>
+
+      <section class="setting-group" aria-labelledby="resolutionHeading">
+        <div class="setting-top">
+          <span class="setting-index">01</span>
+          <h2 id="resolutionHeading">分度值</h2>
+          <span class="setting-value" id="resolutionValue">0.02 mm</span>
+        </div>
+        <div class="resolution-list" role="radiogroup" aria-label="选择分度值">
+          <label class="resolution-option">
+            <input type="radio" name="resolution" value="0.1">
+            <span class="resolution-main">0.1<small>mm</small></span>
+            <span class="resolution-desc">10 分度 · 10 格 / 9 mm</span>
+            <span class="radio-dot" aria-hidden="true"></span>
+          </label>
+          <label class="resolution-option">
+            <input type="radio" name="resolution" value="0.05">
+            <span class="resolution-main">0.05<small>mm</small></span>
+            <span class="resolution-desc">20 分度 · 20 格 / 19 mm</span>
+            <span class="radio-dot" aria-hidden="true"></span>
+          </label>
+          <label class="resolution-option">
+            <input type="radio" name="resolution" value="0.02">
+            <span class="resolution-main">0.02<small>mm</small></span>
+            <span class="resolution-desc">50 分度 · 50 格 / 49 mm</span>
+            <span class="radio-dot" aria-hidden="true"></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="setting-group" aria-labelledby="countHeading">
+        <div class="setting-top">
+          <span class="setting-index">02</span>
+          <h2 id="countHeading">题数</h2>
+          <span class="setting-value" id="countValue">20 题 · 1 页</span>
+        </div>
+
+        <div class="count-control">
+          <button class="count-step" id="decreaseBtn" type="button" aria-label="减少一道题">−</button>
+          <label class="count-input-wrap">
+            <input id="countInput" type="number" min="1" max="60" step="1" value="20" inputmode="numeric" aria-label="题目数量">
+            <span>题</span>
+          </label>
+          <button class="count-step" id="increaseBtn" type="button" aria-label="增加一道题">＋</button>
+        </div>
+
+        <label class="range-wrap">
+          <span class="sr-only">拖动选择题目数量</span>
+          <input id="countRange" type="range" min="1" max="60" step="1" value="20">
+        </label>
+        <div class="range-scale" aria-hidden="true"><span>1</span><span>20</span><span>40</span><span>60</span></div>
+
+        <div class="count-presets" aria-label="快捷题数">
+          <button type="button" data-count="20">20 题</button>
+          <button type="button" data-count="40">40 题</button>
+          <button type="button" data-count="60">60 题</button>
+        </div>
+      </section>
+
+      <section class="setting-group answer-group">
+        <label class="answer-row" for="answerToggle">
+          <span>
+            <strong>答案版</strong>
+            <small>直接在读数横线上印出结果，便于讲评</small>
+          </span>
+          <span class="switch">
+            <input id="answerToggle" type="checkbox">
+            <i aria-hidden="true"></i>
+          </span>
+        </label>
+      </section>
+
+      <div class="panel-actions">
+        <button class="btn btn-quiet" id="regenerateBtn" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19 8a7.5 7.5 0 1 0 .4 7.6M19 4v4.3h-4.3" />
+          </svg>
+          换一组
+        </button>
+        <button class="btn btn-rust" id="downloadPdfSide" type="button">
+          生成 PDF
+        </button>
+      </div>
+
+      <div class="panel-specs">
+        <span>A4 · 210 × 297 mm</span>
+        <span>2 × 10 布局</span>
+        <span>白底线稿</span>
+      </div>
+    </aside>
+
+    <section class="workspace" aria-labelledby="previewHeading">
+      <div class="workspace-head">
+        <div>
+          <span class="eyebrow">LIVE PDF PREVIEW</span>
+          <h2 id="previewHeading">练习纸预览</h2>
+          <p class="workspace-meta" id="workspaceMeta">0.02 mm · 50 分度 · 20 题 · 1 页</p>
+        </div>
+        <p class="preview-note">白底线稿 · 无网格 · 无多余刻度</p>
+      </div>
+
+      <div class="sheets" id="sheets" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="busy-layer" id="busyLayer" aria-live="polite" aria-hidden="true">
+    <div class="busy-card">
+      <span class="spinner" aria-hidden="true"></span>
+      <div>
+        <strong id="busyTitle">正在生成 PDF</strong>
+        <span id="busyDetail">马上就好</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/caliper.js" defer></script>
+  <script src="js/pdf.js" defer></script>
+  <script src="js/app.js" defer></script>
+</body>
+</html>
