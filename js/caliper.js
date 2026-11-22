@@ -1,6 +1,9 @@
 (function (global) {
   "use strict";
 
+  // 读数上限：10 cm（100 mm）。尺面也只画到 100 mm，因此游标末端不越界。
+  const MAX_MM = 100;
+
   const PROFILES = {
     "0.1": {
       key: "0.1",
@@ -10,8 +13,7 @@
       decimals: 1,
       label: "10 分度",
       description: "10 格 / 9 mm",
-      mainLabelStep: 5,
-      vernierLabelStep: 5
+      vernierLabelStep: 1
     },
     "0.05": {
       key: "0.05",
@@ -21,7 +23,6 @@
       decimals: 2,
       label: "20 分度",
       description: "20 格 / 19 mm",
-      mainLabelStep: 5,
       vernierLabelStep: 5
     },
     "0.02": {
@@ -32,10 +33,15 @@
       decimals: 2,
       label: "50 分度",
       description: "50 格 / 49 mm",
-      mainLabelStep: 10,
       vernierLabelStep: 10
     }
   };
+
+  // 主尺读数上限：保证「主尺整数 + 最大小数 + 游标全长 ≤ 100 mm」。
+  function maxMain(profile) {
+    const maxFraction = profile.value * (profile.divisions - 1);
+    return Math.max(0, Math.floor(MAX_MM - profile.vernierLength - maxFraction + 1e-6));
+  }
 
   const SHEET = {
     width: 1240,
@@ -50,13 +56,11 @@
     plotLeft: 22,
     plotWidth: 504,
     item: {
-      indexY: 16,
-      mainLabelY: 38,
-      mainLineY: 52,
-      tickBottomY: 80,
-      vernierLineY: 108,
-      vernierLabelY: 126,
-      readingY: 151
+      indexY: 14,
+      mainLabelY: 42,
+      indexLineY: 66,
+      vernierLabelY: 92,
+      readingY: 132
     }
   };
 
@@ -107,6 +111,7 @@
   function generateQuestions(resolution, count) {
     const profile = PROFILES[resolution] || PROFILES["0.02"];
     const wanted = Math.max(1, Math.min(60, Number(count) || 1));
+    const topMain = maxMain(profile);
     const questions = [];
     const seen = new Set();
     const mainUse = new Map();
@@ -115,7 +120,7 @@
 
     while (questions.length < wanted && attempts < wanted * 180) {
       attempts += 1;
-      const main = randomInt(0, 95);
+      const main = randomInt(0, topMain);
       const k = randomInt(0, profile.divisions - 1);
       const key = `${main}:${k}`;
       const used = mainUse.get(main) || 0;
@@ -127,7 +132,7 @@
       questions.push(makeQuestion(profile, main, k));
     }
 
-    for (let main = 0; main <= 95 && questions.length < wanted; main += 1) {
+    for (let main = 0; main <= topMain && questions.length < wanted; main += 1) {
       for (let k = 0; k < profile.divisions && questions.length < wanted; k += 1) {
         const key = `${main}:${k}`;
         if (!seen.has(key)) {
@@ -140,38 +145,43 @@
     return shuffle(questions);
   }
 
-  function scaleNumberStep(profile) {
-    return profile.mainLabelStep;
+  function scaleNumberStep() {
+    // 主尺每 10 mm（1 cm）标一个数字，和图上的尺面一致。
+    return 10;
   }
 
   function renderItem(question, displayIndex, x, y, answers) {
     const profile = question.profile;
-    const start = Math.max(0, question.main - 3);
     const span = profile.vernierLength + 8;
+    let start = Math.max(0, question.main - 3);
+    if (start + span > MAX_MM) start = Math.max(0, MAX_MM - span);
+    const end = Math.min(MAX_MM, start + span);
     const ppm = SHEET.plotWidth / span;
-    const x0 = SHEET.plotLeft;
-    const x1 = SHEET.plotLeft + SHEET.plotWidth;
-    const sx = (mm) => x0 + (mm - start) * ppm;
+    const sx = (mm) => SHEET.plotLeft + (mm - start) * ppm;
+    const x0 = sx(start);
+    const x1 = sx(end);
     const zeroX = sx(question.main + question.fraction);
-    const vernierEndX = zeroX + profile.vernierLength * ppm;
+    const lineY = SHEET.item.indexLineY;
 
     const mainTicks = [];
     const mainLabels = [];
     const mainStart = Math.max(0, Math.ceil(start));
-    const mainEnd = Math.floor(start + span);
+    const mainEnd = Math.floor(end);
 
     for (let mm = mainStart; mm <= mainEnd; mm += 1) {
       const px = sx(mm);
       if (px < x0 - 1 || px > x1 + 1) continue;
-      const isMajor = mm % 5 === 0;
-      const strokeWidth = isMajor ? 1.05 : 0.72;
+      const isCm = mm % 10 === 0;
+      const isHalf = mm % 5 === 0;
+      const length = isCm ? 18 : isHalf ? 12 : 8;
+      const strokeWidth = isCm ? 1.1 : isHalf ? 0.85 : 0.7;
       mainTicks.push(
-        `<line x1="${px.toFixed(2)}" y1="${SHEET.item.mainLineY}" x2="${px.toFixed(2)}" y2="${SHEET.item.tickBottomY}" stroke="#1d201b" stroke-width="${strokeWidth}" stroke-linecap="square"/>`
+        `<line x1="${px.toFixed(2)}" y1="${lineY}" x2="${px.toFixed(2)}" y2="${(lineY - length).toFixed(2)}" stroke="#1d201b" stroke-width="${strokeWidth}" stroke-linecap="square"/>`
       );
 
-      if (mm % scaleNumberStep(profile) === 0 && px > 8 && px < 537) {
+      if (mm % scaleNumberStep() === 0 && px > 10 && px < 535) {
         mainLabels.push(
-          `<text x="${px.toFixed(2)}" y="${SHEET.item.mainLabelY}" text-anchor="middle" class="scale-number">${mm}</text>`
+          `<text x="${px.toFixed(2)}" y="${SHEET.item.mainLabelY}" text-anchor="middle" class="scale-number">${mm / 10}</text>`
         );
       }
     }
@@ -183,15 +193,18 @@
 
     for (let i = 0; i <= profile.divisions; i += 1) {
       const px = zeroX + i * spacingPx;
-      const isMajor = i === 0 || i === profile.divisions || i % labelStep === 0;
-      const strokeWidth = isMajor ? 1.05 : 0.72;
+      if (px > x1 + 1) break;
+      const isEdge = i === 0 || i === profile.divisions;
+      const isLabeled = i % labelStep === 0;
+      const length = i === 0 ? 17 : isEdge ? 15 : isLabeled ? 13 : 6.5;
+      const strokeWidth = isEdge || isLabeled ? 1.05 : 0.7;
       vernierTicks.push(
-        `<line x1="${px.toFixed(2)}" y1="${SHEET.item.tickBottomY}" x2="${px.toFixed(2)}" y2="${SHEET.item.vernierLineY}" stroke="#1d201b" stroke-width="${strokeWidth}" stroke-linecap="square"/>`
+        `<line x1="${px.toFixed(2)}" y1="${lineY}" x2="${px.toFixed(2)}" y2="${(lineY + length).toFixed(2)}" stroke="#1d201b" stroke-width="${strokeWidth}" stroke-linecap="square"/>`
       );
 
-      if (isMajor) {
+      if (isLabeled) {
         vernierLabels.push(
-          `<text x="${px.toFixed(2)}" y="${SHEET.item.vernierLabelY}" text-anchor="middle" class="vernier-number">${i}</text>`
+          `<text x="${px.toFixed(2)}" y="${SHEET.item.vernierLabelY}" text-anchor="middle" class="vernier-number">${i / labelStep}</text>`
         );
       }
     }
@@ -203,10 +216,9 @@
 
     return `<g transform="translate(${x} ${y})">
       <text x="0" y="${SHEET.item.indexY}" class="item-index">${pad2(displayIndex)}</text>
-      <line x1="${x0}" y1="${SHEET.item.mainLineY}" x2="${x1}" y2="${SHEET.item.mainLineY}" stroke="#1d201b" stroke-width="1" stroke-linecap="square"/>
+      <line x1="${x0.toFixed(2)}" y1="${lineY}" x2="${x1.toFixed(2)}" y2="${lineY}" stroke="#1d201b" stroke-width="1" stroke-linecap="square"/>
       ${mainTicks.join("")}
       ${mainLabels.join("")}
-      <line x1="${zeroX.toFixed(2)}" y1="${SHEET.item.vernierLineY}" x2="${vernierEndX.toFixed(2)}" y2="${SHEET.item.vernierLineY}" stroke="#1d201b" stroke-width="1" stroke-linecap="square"/>
       ${vernierTicks.join("")}
       ${vernierLabels.join("")}
       <text x="22" y="${SHEET.item.readingY}" class="reading-label">读数</text>
@@ -248,7 +260,7 @@
       <g>
         <text x="56" y="39" class="sheet-title">游标卡尺读数练习</text>
         <text x="56" y="58" class="sheet-sub">VERNIER CALIPER / SIMPLE LINE SKETCH</text>
-        <text x="1184" y="34" text-anchor="end" class="sheet-meta">分度值 ${profile.value} mm · ${profile.label} · ${profile.description}</text>
+        <text x="1184" y="34" text-anchor="end" class="sheet-meta">主尺 cm · 分度值 ${profile.value} mm · ${profile.label} · ${profile.description}</text>
         <text x="1184" y="54" text-anchor="end" class="sheet-meta">${pageText}</text>
         <line x1="56" y1="${SHEET.headerLineY}" x2="1184" y2="${SHEET.headerLineY}" stroke="#c8c7bd" stroke-width="0.9"/>
       </g>

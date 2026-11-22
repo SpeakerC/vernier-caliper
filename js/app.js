@@ -4,9 +4,10 @@
   const $ = (selector, root) => (root || document).querySelector(selector);
   const $$ = (selector, root) => Array.from((root || document).querySelectorAll(selector));
 
+  // A4 页面位图：300 dpi（210 mm × 297 mm → 2480 × 3508 px），线条更清晰。
   const A4 = {
-    width: 1654,
-    height: 2339,
+    width: 2480,
+    height: 3508,
     pageWidth: 595.28,
     pageHeight: 841.89
   };
