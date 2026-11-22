@@ -4,7 +4,9 @@
 
 ## 在线使用
 
-**https://speakerc.github.io/vernier-caliper/**
+**https://ybkc.zzlltt.xyz/**
+
+（GitHub Pages 原始地址 https://speakerc.github.io/vernier-caliper/ 现在会自动跳转到这个域名。）
 
 部署在 GitHub Pages 上，直接打开即可使用，无需安装任何东西。
 
